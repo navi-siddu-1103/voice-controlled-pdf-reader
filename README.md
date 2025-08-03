@@ -1,95 +1,34 @@
-# voice-controlled-pdf-reader
+# Voice Controlled PDF Reader
 
-A Python application that allows users to navigate PDF documents using voice commands. The application uses machine learning to recognize commands like "scroll up", "scroll down", "move up", "move down", etc.
+This is a simple, web-based PDF reader that allows users to navigate through PDF documents using voice commands.
 
 ## Features
 
-- **Voice Command Recognition**: Uses speech recognition with ML to understand scroll commands
-- **Continuous Scrolling**: Auto-scrolls in the specified direction until told to stop
-- **Adjustable Speed**: Control how fast the document scrolls
-- **PDF Navigation**: Jump to top/bottom of document with voice commands
-- **Attractive UI**: Modern, clean interface with visual feedback
-- **Command Logging**: Shows your recent voice commands
+-   **Upload PDFs**: Load any PDF file from your local machine.
+-   **Voice Navigation**: Control the PDF viewer with your voice.
+-   **Page Navigation**:
+    -   "Next page"
+    -   "Previous page"
+    -   "Go to page [number]" (e.g., "Go to page 5")
+-   **Scrolling**:
+    -   "Scroll down"
+    -   "Scroll up"
+-   **Responsive Design**: The interface is designed to work on different screen sizes.
+-   **User-Friendly Feedback**: The application provides clear feedback on microphone status and errors.
 
-## Installation
+## How to Use
 
-1. Clone the repository:
-   ```bash
-   git clone https://github.com/yourusername/voice-pdf-scroller.git
-   cd voice-pdf-scroller
-   ```
+1.  Clone this repository or download the files.
+2.  Open the `index.html` file in a modern web browser that supports the Web Speech API (like Google Chrome, Firefox, or Edge).
+3.  Click the "Upload PDF" button to select a PDF file.
+4.  Click the "Start Listening" button and grant microphone permissions when prompted.
+5.  Use the available voice commands to navigate the document.
 
-2. Install the required packages:
-   ```bash
-   pip install -r requirements.txt
-   ```
+## Technologies Used
 
-   Or install the package:
-   ```bash
-   pip install .
-   ```
+-   **HTML5**
+-   **CSS3** (with Tailwind CSS)
+-   **JavaScript**
+-   **PDF.js Library**: For rendering PDF files in the browser.
+-   **Web Speech API**: For voice recognition.
 
-## Usage
-
-1. Start the application:
-   ```bash
-   python main.py
-   ```
-   
-   Or if installed as a package:
-   ```bash
-   voice-pdf
-   ```
-
-2. Click "Open PDF" to select your document
-3. Click "Start Voice Control" to enable voice commands
-4. Speak commands to navigate the document
-
-## Voice Commands
-
-- **"Up"**, **"Scroll Up"**, **"Move Up"**: Scroll upward continuously
-- **"Down"**, **"Scroll Down"**, **"Move Down"**: Scroll downward continuously
-- **"Stop"**: Stop scrolling
-- **"Top"**: Jump to document beginning
-- **"Bottom"**: Jump to document end
-- **"Exit"**: Close the application
-
-## Development
-
-### Project Structure
-```
-voice_pdf_scroller/
-│
-├── main.py                 # Main entry point
-├── requirements.txt        # Dependencies list
-├── setup.py                # Package installation script
-├── resources/
-│   └── icon.png            # Application icon
-│
-├── src/
-│   ├── __init__.py
-│   ├── ui/                 # User interface components
-│   ├── pdf/                # PDF document handling
-│   ├── speech/             # Speech recognition & ML
-│   └── utils/              # Utility functions
-│
-└── tests/                  # Unit tests
-```
-
-### Running Tests
-
-```bash
-python -m unittest discover -s tests
-```
-
-## Requirements
-
-- Python 3.6 or higher
-- PyQt5 for the user interface
-- SpeechRecognition for voice input
-- scikit-learn for machine learning
-- numpy for data processing
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
