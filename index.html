@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Voice Controlled PDF Reader</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar for a cleaner look */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #888;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #555;
+        }
+        #pdf-render {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            transition: background-color 0.3s ease;
+        }
+        .status-dot.listening {
+            background-color: #f87171; /* red-500 */
+            animation: pulse 1.5s infinite;
+        }
+        .status-dot.idle {
+            background-color: #4ade80; /* green-400 */
+        }
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.5;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex flex-col items-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 space-y-6">
+        <header class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900">Voice Controlled PDF Reader</h1>
+            <p class="text-gray-600 mt-1">Upload a PDF and use your voice to navigate.</p>
+        </header>
+
+        <!-- Controls Section -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+            <div>
+                <label for="file-upload" class="block text-sm font-medium text-gray-700 mb-2">Upload PDF</label>
+                <input id="file-upload" type="file" class="block w-full text-sm text-gray-500
+                    file:mr-4 file:py-2 file:px-4
+                    file:rounded-full file:border-0
+                    file:text-sm file:font-semibold
+                    file:bg-violet-50 file:text-violet-700
+                    hover:file:bg-violet-100
+                "/>
+            </div>
+            <div class="flex flex-col items-center justify-center">
+                <div class="flex items-center space-x-4">
+                    <button id="mic-button" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-transform transform hover:scale-105">
+                        Start Listening
+                    </button>
+                    <button id="clear-button" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-transform transform hover:scale-105">
+                        Clear
+                    </button>
+                </div>
+                <div id="status-container" class="flex items-center mt-3 text-sm text-gray-500">
+                    <div id="status-dot" class="status-dot idle mr-2"></div>
+                    <span id="status-text">Not Listening</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- PDF Info and Command List -->
+        <div class="bg-gray-50 p-4 rounded-lg">
+             <div id="pdf-info" class="text-center font-medium text-gray-700 mb-4">
+                No PDF loaded.
+            </div>
+            <details>
+                <summary class="cursor-pointer text-center text-violet-600 font-semibold">Available Voice Commands</summary>
+                <ul class="mt-3 list-disc list-inside text-left text-gray-600 space-y-1 max-w-md mx-auto">
+                    <li><span class="font-semibold">"Scroll down" / "Scroll up"</span>: Moves the view down or up.</li>
+                    <li><span class="font-semibold">"Next page"</span>: Go to the next page.</li>
+                    <li><span class="font-semibold">"Previous page"</span>: Go to the previous page.</li>
+                    <li><span class="font-semibold">"Go to page [number]"</span>: Jumps to a specific page (e.g., "Go to page 5").</li>
+                </ul>
+            </details>
+        </div>
+        
+        <!-- Last Command Display -->
+        <div id="command-display-container" class="text-center hidden">
+            <p class="text-sm text-gray-500">Last command heard:</p>
+            <p id="command-display" class="font-mono bg-gray-100 p-2 rounded-md text-gray-800 text-sm inline-block"></p>
+        </div>
+
+    </div>
+
+    <!-- PDF Viewer (initially hidden) -->
+    <div id="pdf-viewer" class="w-full max-w-4xl mt-6 hidden">
+        <canvas id="pdf-render" class="rounded-lg"></canvas>
+    </div>
+
+    <!-- Modal for errors -->
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
+        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center">
+            <h3 class="text-lg font-bold text-red-600 mb-4">Application Notice</h3>
+            <div id="error-modal-text" class="text-gray-700 mb-6 text-left"></div>
+            <button id="close-modal-button" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 w-full">
+                Got it
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Set workerSrc for pdf.js
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js`;
+
+        // DOM Elements
+        const fileUpload = document.getElementById('file-upload');
+        const clearButton = document.getElementById('clear-button');
+        const micButton = document.getElementById('mic-button');
+        const statusDot = document.getElementById('status-dot');
+        const statusText = document.getElementById('status-text');
+        const pdfInfo = document.getElementById('pdf-info');
+        const pdfRender = document.getElementById('pdf-render');
+        const pdfViewer = document.getElementById('pdf-viewer');
+        const commandDisplay = document.getElementById('command-display');
+        const commandDisplayContainer = document.getElementById('command-display-container');
+        const ctx = pdfRender.getContext('2d');
+        const errorModal = document.getElementById('error-modal');
+        const errorModalText = document.getElementById('error-modal-text');
+        const closeModalButton = document.getElementById('close-modal-button');
+
+
+        // App State
+        let pdfDoc = null;
+        let pageNum = 1;
+        let pageRendering = false;
+        let pageNumPending = null;
+        let scale = 1.5;
+        let isListening = false;
+
+        // Speech Recognition Setup
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        let recognition;
+
+        // --- Modal Functions ---
+        function showErrorModal(message, title = "Microphone Permission Error") {
+            errorModal.querySelector('h3').textContent = title;
+            errorModalText.innerHTML = message;
+            errorModal.classList.remove('hidden');
+        }
+
+        function hideErrorModal() {
+            errorModal.classList.add('hidden');
+        }
+        
+        closeModalButton.addEventListener('click', hideErrorModal);
+        // --- End Modal Functions ---
+
+
+        if (SpeechRecognition) {
+            recognition = new SpeechRecognition();
+            recognition.continuous = true;
+            recognition.lang = 'en-US';
+            recognition.interimResults = false;
+
+            recognition.onstart = () => {
+                isListening = true;
+                micButton.textContent = 'Stop Listening';
+                statusDot.classList.remove('idle');
+                statusDot.classList.add('listening');
+                statusText.textContent = 'Listening...';
+            };
+
+            recognition.onend = () => {
+                isListening = false;
+                micButton.textContent = 'Start Listening';
+                statusDot.classList.remove('listening');
+                statusDot.classList.add('idle');
+                statusText.textContent = 'Not Listening';
+            };
+
+            recognition.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'not-allowed') {
+                    statusText.textContent = 'Mic access denied';
+                    showErrorModal('To use voice control, you need to allow this page to access your microphone. <br><br>Please check your browser\'s site settings (usually a <b>lock icon</b> in the address bar) and set the microphone permission to "Allow", then try again.');
+                } else {
+                    statusText.textContent = `Error: ${event.error}`;
+                    showErrorModal(`An unexpected speech recognition error occurred: <b>${event.error}</b>.`, 'Speech Recognition Error');
+                }
+            };
+
+            recognition.onresult = (event) => {
+                const last = event.results.length - 1;
+                const command = event.results[last][0].transcript.trim().toLowerCase();
+                
+                console.log('Command received:', command);
+                commandDisplayContainer.classList.remove('hidden');
+                commandDisplay.textContent = command;
+
+                handleVoiceCommand(command);
+            };
+        } else {
+            micButton.disabled = true;
+            statusText.textContent = 'Speech recognition not supported in this browser.';
+            micButton.classList.add('opacity-50', 'cursor-not-allowed');
+        }
+
+        /**
+         * Renders a specific page of the PDF.
+         * @param {number} num The page number to render.
+         */
+        function renderPage(num) {
+            pageRendering = true;
+            // Using promise to fetch the page
+            pdfDoc.getPage(num).then(page => {
+                const viewport = page.getViewport({ scale: scale });
+                pdfRender.height = viewport.height;
+                pdfRender.width = viewport.width;
+
+                // Render PDF page into canvas context
+                const renderContext = {
+                    canvasContext: ctx,
+                    viewport: viewport
+                };
+                const renderTask = page.render(renderContext);
+
+                // Wait for rendering to finish
+                renderTask.promise.then(() => {
+                    pageRendering = false;
+                    pdfInfo.textContent = `Page ${num} of ${pdfDoc.numPages}`;
+                    if (pageNumPending !== null) {
+                        // New page rendering is pending
+                        renderPage(pageNumPending);
+                        pageNumPending = null;
+                    }
+                });
+            });
+        }
+
+        /**
+         * If another page rendering in progress, waits until the rendering is
+         * finised. Otherwise, renders the page.
+         * @param {number} num Page number.
+         */
+        function queueRenderPage(num) {
+            if (pageRendering) {
+                pageNumPending = num;
+            } else {
+                renderPage(num);
+            }
+        }
+
+        /**
+         * Displays previous page.
+         */
+        function onPrevPage() {
+            if (pageNum <= 1) {
+                return;
+            }
+            pageNum--;
+            queueRenderPage(pageNum);
+        }
+
+        /**
+         * Displays next page.
+         */
+        function onNextPage() {
+            if (pageNum >= pdfDoc.numPages) {
+                return;
+            }
+            pageNum++;
+            queueRenderPage(pageNum);
+        }
+        
+        /**
+         * Goes to a specific page.
+         * @param {number} num The page number to go to.
+         */
+        function goToPage(num) {
+            if (num >= 1 && num <= pdfDoc.numPages) {
+                pageNum = num;
+                queueRenderPage(pageNum);
+            } else {
+                console.warn(`Page number ${num} is out of range.`);
+            }
+        }
+
+        /**
+         * Handles voice commands to navigate the PDF.
+         * @param {string} command The voice command transcript.
+         */
+        function handleVoiceCommand(command) {
+            if (!pdfDoc) {
+                console.log("PDF not loaded yet.");
+                return;
+            }
+
+            if (command.includes('scroll down')) {
+                window.scrollBy({ top: 300, left: 0, behavior: 'smooth' });
+            } else if (command.includes('scroll up')) {
+                window.scrollBy({ top: -300, left: 0, behavior: 'smooth' });
+            } else if (command.includes('next page')) {
+                onNextPage();
+            } else if (command.includes('previous page')) {
+                onPrevPage();
+            } else if (command.startsWith('go to page')) {
+                const pageNumberMatch = command.match(/\d+/);
+                if (pageNumberMatch) {
+                    const pageNumber = parseInt(pageNumberMatch[0], 10);
+                    goToPage(pageNumber);
+                }
+            }
+        }
+        
+        /**
+         * Clears the PDF viewer and resets the state.
+         */
+        function clearPdf() {
+            pdfDoc = null;
+            pageNum = 1;
+            ctx.clearRect(0, 0, pdfRender.width, pdfRender.height);
+            pdfViewer.classList.add('hidden'); 
+            pdfInfo.textContent = 'No PDF loaded.';
+            commandDisplayContainer.classList.add('hidden');
+            fileUpload.value = ''; // Reset file input
+        }
+
+        // Event Listeners
+        fileUpload.addEventListener('change', event => {
+            const file = event.target.files[0];
+
+            clearPdf(); // Clear previous PDF before loading a new one
+
+            if (file && file.type === 'application/pdf') {
+                pdfInfo.textContent = 'Loading PDF...'; // Provide feedback to the user
+                const fileReader = new FileReader();
+                fileReader.onload = function() {
+                    const typedarray = new Uint8Array(this.result);
+                    const loadingTask = pdfjsLib.getDocument(typedarray);
+                    loadingTask.promise.then(pdfDoc_ => {
+                        pdfDoc = pdfDoc_;
+                        pageNum = 1;
+                        renderPage(pageNum);
+                        pdfViewer.classList.remove('hidden'); // Show viewer after PDF is loaded
+                    }, error => {
+                        console.error("Error loading PDF:", error);
+                        showErrorModal("Could not load the PDF. It might be corrupted or in an unsupported format.", "PDF Loading Error");
+                        pdfInfo.textContent = "Failed to load PDF.";
+                    });
+                };
+                fileReader.readAsArrayBuffer(file);
+            } else {
+                if (file) { // A file was selected, but it's not a PDF
+                    showErrorModal('Please select a valid PDF file.', 'Invalid File Type');
+                }
+            }
+        });
+
+        clearButton.addEventListener('click', clearPdf);
+
+        micButton.addEventListener('click', () => {
+            if (!SpeechRecognition) {
+                showErrorModal('Sorry, your browser does not support voice recognition.', 'Unsupported Feature');
+                return;
+            }
+            if (isListening) {
+                recognition.stop();
+            } else {
+                recognition.start();
+            }
+        });
+
+    </script>
+</body>
+</html>
