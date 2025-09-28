@@ -53,34 +53,34 @@
 </head>
 <body class="bg-gray-100 text-gray-800 flex flex-col items-center min-h-screen p-4">
 
-    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-6 space-y-6">
+    <div class="w-full max-w-4xl bg-white rounded-xl shadow-lg p-4 md:p-6 space-y-6">
         <header class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900">Voice Controlled PDF Reader</h1>
-            <p class="text-gray-600 mt-1">Upload a PDF and use your voice to navigate.</p>
+            <h1 class="text-2xl md:text-3xl font-bold text-gray-900">Voice Controlled PDF Reader</h1>
+            <p class="text-gray-600 mt-1 text-sm md:text-base">Upload a PDF and use your voice to navigate.</p>
         </header>
 
         <!-- Controls Section -->
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
             <div>
                 <label for="file-upload" class="block text-sm font-medium text-gray-700 mb-2">Upload PDF</label>
-                <input id="file-upload" type="file" class="block w-full text-sm text-gray-500
+                <input id="file-upload" type="file" class="block w-full text-xs md:text-sm text-gray-500
                     file:mr-4 file:py-2 file:px-4
                     file:rounded-full file:border-0
-                    file:text-sm file:font-semibold
+                    file:text-xs md:file:text-sm file:font-semibold
                     file:bg-violet-50 file:text-violet-700
                     hover:file:bg-violet-100
                 "/>
             </div>
             <div class="flex flex-col items-center justify-center">
-                <div class="flex items-center space-x-4">
-                    <button id="mic-button" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg shadow-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-transform transform hover:scale-105">
+                <div class="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-4 w-full">
+                    <button id="mic-button" class="bg-violet-600 text-white font-bold py-2 px-4 md:px-6 rounded-lg shadow-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 transition-transform transform hover:scale-105 w-full md:w-auto">
                         Start Listening
                     </button>
-                    <button id="clear-button" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-transform transform hover:scale-105">
+                    <button id="clear-button" class="bg-gray-200 text-gray-700 font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition-transform transform hover:scale-105 w-full md:w-auto mt-2 md:mt-0">
                         Clear
                     </button>
                 </div>
-                <div id="status-container" class="flex items-center mt-3 text-sm text-gray-500">
+                <div id="status-container" class="flex items-center mt-3 text-xs md:text-sm text-gray-500">
                     <div id="status-dot" class="status-dot idle mr-2"></div>
                     <span id="status-text">Not Listening</span>
                 </div>
@@ -88,13 +88,13 @@
         </div>
 
         <!-- PDF Info and Command List -->
-        <div class="bg-gray-50 p-4 rounded-lg">
-             <div id="pdf-info" class="text-center font-medium text-gray-700 mb-4">
+        <div class="bg-gray-50 p-3 md:p-4 rounded-lg">
+             <div id="pdf-info" class="text-center font-medium text-gray-700 mb-4 text-xs md:text-base">
                 No PDF loaded.
             </div>
             <details>
-                <summary class="cursor-pointer text-center text-violet-600 font-semibold">Available Voice Commands</summary>
-                <ul class="mt-3 list-disc list-inside text-left text-gray-600 space-y-1 max-w-md mx-auto">
+                <summary class="cursor-pointer text-center text-violet-600 font-semibold text-sm md:text-base">Available Voice Commands</summary>
+                <ul class="mt-3 list-disc list-inside text-left text-gray-600 space-y-1 max-w-md mx-auto text-xs md:text-base">
                     <li><span class="font-semibold">"Scroll down" / "Scroll up"</span>: Moves the view down or up.</li>
                     <li><span class="font-semibold">"Next page"</span>: Go to the next page.</li>
                     <li><span class="font-semibold">"Previous page"</span>: Go to the previous page.</li>
@@ -105,23 +105,23 @@
         
         <!-- Last Command Display -->
         <div id="command-display-container" class="text-center hidden">
-            <p class="text-sm text-gray-500">Last command heard:</p>
-            <p id="command-display" class="font-mono bg-gray-100 p-2 rounded-md text-gray-800 text-sm inline-block"></p>
+            <p class="text-xs md:text-sm text-gray-500">Last command heard:</p>
+            <p id="command-display" class="font-mono bg-gray-100 p-2 rounded-md text-gray-800 text-xs md:text-sm inline-block"></p>
         </div>
 
     </div>
 
     <!-- PDF Viewer (initially hidden) -->
-    <div id="pdf-viewer" class="w-full max-w-4xl mt-6 hidden">
-        <canvas id="pdf-render" class="rounded-lg"></canvas>
+    <div id="pdf-viewer" class="w-full max-w-4xl mt-4 md:mt-6 hidden overflow-x-auto">
+        <canvas id="pdf-render" class="rounded-lg max-w-full"></canvas>
     </div>
 
     <!-- Modal for errors -->
-    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-4">
-        <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm w-full text-center">
-            <h3 class="text-lg font-bold text-red-600 mb-4">Application Notice</h3>
-            <div id="error-modal-text" class="text-gray-700 mb-6 text-left"></div>
-            <button id="close-modal-button" class="bg-violet-600 text-white font-bold py-2 px-6 rounded-lg hover:bg-violet-700 w-full">
+    <div id="error-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50 p-2 md:p-4">
+        <div class="bg-white rounded-lg shadow-xl p-4 md:p-6 max-w-xs md:max-w-sm w-full text-center">
+            <h3 class="text-base md:text-lg font-bold text-red-600 mb-4">Application Notice</h3>
+            <div id="error-modal-text" class="text-gray-700 mb-6 text-left text-xs md:text-base"></div>
+            <button id="close-modal-button" class="bg-violet-600 text-white font-bold py-2 px-4 md:px-6 rounded-lg hover:bg-violet-700 w-full">
                 Got it
             </button>
         </div>
